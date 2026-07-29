@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ArrowLeft, BookOpen, Brain, Loader2, RefreshCw } from 'lucide-react';
 import type { Opening, OpeningLine, AppSettings } from '../types';
-import { buildOpeningLines } from '../lib/explorer';
+import { buildOpeningLines, ExplorerAuthError } from '../lib/explorer';
+import { isLoggedIn, startLogin } from '../lib/lichessAuth';
 import { NewLinesView } from './NewLinesView';
 import { PracticeView } from './PracticeView';
 
@@ -21,10 +22,12 @@ export function OpeningDetail({ opening, settings, onBack, onUpdateSettings, onS
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ requests: 0, leaves: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   async function generate() {
     setGenerating(true);
     setError(null);
+    setNeedsAuth(false);
     try {
       const lines = await buildOpeningLines(opening.startMoves, settings.explorerSource, setProgress);
       if (lines.length === 0) {
@@ -32,43 +35,59 @@ export function OpeningDetail({ opening, settings, onBack, onUpdateSettings, onS
       } else {
         onSetLines(lines);
       }
-    } catch {
-      setError('Something went wrong generating lines. Try again.');
+    } catch (err) {
+      if (err instanceof ExplorerAuthError) {
+        setNeedsAuth(true);
+      } else {
+        setError('Something went wrong generating lines. Try again.');
+      }
     } finally {
       setGenerating(false);
     }
   }
 
   const header = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-      <button
-        onClick={mode === 'menu' ? onBack : () => setMode('menu')}
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          border: '1px solid var(--border)',
-          background: 'var(--surface)',
-          color: 'var(--text)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          flexShrink: 0,
-        }}
-        aria-label="Back"
-      >
-        <ArrowLeft size={18} />
-      </button>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {opening.name}
-        </h1>
-        <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-          {opening.eco ? `${opening.eco} · ` : ''}
-          {opening.side === 'white' ? 'For White' : 'For Black'}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <button
+          onClick={mode === 'menu' ? onBack : () => setMode('menu')}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: '1px solid var(--border)',
+            background: 'var(--surface)',
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+          aria-label="Back"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {opening.name}
+          </h1>
+          <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+            {opening.eco ? `${opening.eco} · ` : ''}
+            {opening.side === 'white' ? 'For White' : 'For Black'}
+          </div>
         </div>
       </div>
+      <span
+        style={{
+          fontSize: 11,
+          color: isLoggedIn() ? 'var(--good)' : 'var(--text-faint)',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+      >
+        {isLoggedIn() ? '● Lichess connected' : '○ Not connected'}
+      </span>
     </div>
   );
 
@@ -84,7 +103,21 @@ export function OpeningDetail({ opening, settings, onBack, onUpdateSettings, onS
             textAlign: 'center',
           }}
         >
-          {!generating && (
+          {!generating && needsAuth && (
+            <>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 4 }}>
+                Lichess now requires a free account to use the opening database.
+              </p>
+              <p style={{ color: 'var(--text-faint)', fontSize: 13, marginBottom: 16 }}>
+                Connect your Lichess account (or create a free one) to pull lines. This app never
+                sees your password — Lichess handles sign-in directly.
+              </p>
+              <button onClick={() => startLogin()} style={primaryButtonStyle}>
+                Connect Lichess account
+              </button>
+            </>
+          )}
+          {!generating && !needsAuth && (
             <>
               <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
                 Pull the most-played lines for this opening from the Lichess database.
@@ -112,6 +145,25 @@ export function OpeningDetail({ opening, settings, onBack, onUpdateSettings, onS
   return (
     <div style={{ padding: '20px 16px 40px', maxWidth: 640, margin: '0 auto' }}>
       {header}
+
+      {needsAuth && (
+        <div
+          style={{
+            border: '1px solid var(--accent-dim)',
+            background: 'var(--surface)',
+            borderRadius: 'var(--radius-md)',
+            padding: '14px 16px',
+            marginBottom: 14,
+          }}
+        >
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
+            Lichess requires a free account to refresh lines now.
+          </p>
+          <button onClick={() => startLogin()} style={{ ...primaryButtonStyle, height: 38, fontSize: 13 }}>
+            Connect Lichess account
+          </button>
+        </div>
+      )}
 
       {mode === 'menu' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import type { OpeningLine } from '../types';
+import { getToken } from './lichessAuth';
 
 const EXPLORER_BASE = 'https://explorer.lichess.ovh';
 
@@ -34,21 +35,36 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export class ExplorerAuthError extends Error {
+  constructor() {
+    super('Lichess Opening Explorer requires being logged in.');
+    this.name = 'ExplorerAuthError';
+  }
+}
+
 async function fetchPosition(fen: string, source: ExplorerSource, attempt = 0): Promise<ExplorerResponse | null> {
   const url =
     source === 'masters'
       ? `${EXPLORER_BASE}/masters?fen=${encodeURIComponent(fen)}&moves=8&topGames=0`
       : `${EXPLORER_BASE}/lichess?fen=${encodeURIComponent(fen)}&moves=8&topGames=0&speeds=blitz,rapid,classical&ratings=1800,2000,2200`;
 
+  const token = getToken();
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   try {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    const res = await fetch(url, { headers });
+    if (res.status === 401) {
+      throw new ExplorerAuthError();
+    }
     if (res.status === 429 && attempt < 2) {
       await sleep(700 * (attempt + 1));
       return fetchPosition(fen, source, attempt + 1);
     }
     if (!res.ok) return null;
     return (await res.json()) as ExplorerResponse;
-  } catch {
+  } catch (err) {
+    if (err instanceof ExplorerAuthError) throw err;
     return null;
   }
 }

@@ -16,6 +16,8 @@ export const OPENING_PRESETS: OpeningPreset[] = [
   { id: 'vienna', name: 'Vienna Game', eco: 'C25', side: 'white', startMoves: ['e4', 'e5', 'Nc3'] },
   { id: 'sicilian-najdorf', name: 'Sicilian Najdorf', eco: 'B90', side: 'black', startMoves: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'a6'] },
   { id: 'sicilian-open', name: 'Sicilian Defense (Open)', eco: 'B20', side: 'black', startMoves: ['e4', 'c5'] },
+  { id: 'petrov', name: 'Petrov Defense', eco: 'C42', side: 'black', startMoves: ['e4', 'e5', 'Nf3', 'Nf6'] },
+  { id: 'stafford-gambit', name: 'Stafford Gambit', eco: 'C42', side: 'black', startMoves: ['e4', 'e5', 'Nf3', 'Nf6', 'Nxe5', 'Nc6'] },
   { id: 'french', name: 'French Defense', eco: 'C00', side: 'black', startMoves: ['e4', 'e6'] },
   { id: 'caro-kann', name: 'Caro-Kann Defense', eco: 'B10', side: 'black', startMoves: ['e4', 'c6'] },
   { id: 'scandinavian', name: 'Scandinavian Defense', eco: 'B01', side: 'black', startMoves: ['e4', 'd5'] },

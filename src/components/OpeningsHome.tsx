@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, ChevronRight, X } from 'lucide-react';
 import type { Opening, OpeningPreset } from '../types';
 import { OPENING_PRESETS } from '../lib/openingPresets';
+import { isLoggedIn, logout } from '../lib/lichessAuth';
 
 interface OpeningsHomeProps {
   openings: Opening[];
@@ -21,7 +22,20 @@ export function OpeningsHome({ openings, onAdd, onOpen, onRemove }: OpeningsHome
         <p style={{ color: 'var(--text-faint)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
           Opening Trainer
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 700 }}>My Openings</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>My Openings</h1>
+        {isLoggedIn() ? (
+          <button
+            onClick={() => {
+              logout();
+              window.location.reload();
+            }}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--good)', fontSize: 12, cursor: 'pointer' }}
+          >
+            ● Lichess connected — disconnect
+          </button>
+        ) : (
+          <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>○ Not connected to Lichess</span>
+        )}
       </header>
 
       {openings.length === 0 && (

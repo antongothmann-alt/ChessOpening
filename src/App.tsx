@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Opening, OpeningLine, OpeningPreset, AppSettings } from './types';
 import { loadOpenings, saveOpenings, loadSettings, saveSettings } from './lib/storage';
+import { handleAuthRedirect } from './lib/lichessAuth';
 import { OpeningsHome } from './components/OpeningsHome';
 import { OpeningDetail } from './components/OpeningDetail';
 
@@ -8,6 +9,11 @@ export default function App() {
   const [openings, setOpenings] = useState<Opening[]>(() => loadOpenings());
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    handleAuthRedirect().finally(() => setAuthReady(true));
+  }, []);
 
   useEffect(() => saveOpenings(openings), [openings]);
   useEffect(() => saveSettings(settings), [settings]);
@@ -47,6 +53,14 @@ export default function App() {
   }
 
   const activeOpening = openings.find((o) => o.id === activeId) ?? null;
+
+  if (!authReady) {
+    return (
+      <div style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
+        Loading…
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100%' }}>
